@@ -1,15 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 class RRTMap:
+	#global ax
 
-	def __init__(self,start,goal,mapDim,obsDim,obsNum):
+	def __init__(self,start,goal,mapDim,obsDim,obsNum,fig,ax):
 		self.start = start
 		self.goal = goal
 		self.mapDim = mapDim
 		self.mapHt,self.mapWd = self.mapDim
 
 		self.nodeRad = 0
+		self.ax = ax
+		self.fig = fig
 
 		self.obstacles = []
 		self.obsDim = obsDim
@@ -48,26 +52,27 @@ class RRTMap:
 		return obs
 
 	def drawMap(self):
-		ax = plt.gca()
 		obs = self.makeObs()
 		startNode = plt.Circle(self.start, 0.01, color='blue')
 		goalNode = plt.Circle(self.goal, 0.01, color='red')
-		ax.add_patch(startNode) 
-		ax.add_patch(goalNode)
+		self.ax.add_patch(startNode) 
+		self.ax.add_patch(goalNode)
 		for i in range(len(obs)):
-			ax.add_patch(obs[i])
-		plt.get_current_fig_manager().canvas.set_window_title('RRT Visualizer')
-		plt.show()
-		plt.tight_layout()	
+			self.ax.add_patch(obs[i])
+
 
 	def drawPath(self):
 		pass
 
 	def drawObs(self):
 		pass
+		
+	def addNode(self):
+		trial = plt.Circle((np.random.rand(),np.random.rand()),0.01,color='yellow')
+		self.ax.add_patch(trial)
 
-
-class RRTGraph:
+			
+"""class RRTGraph:
 
 	def __init__(self,start,goal,mapDim,obsDim,obsNum):
 		(x,y) = start
@@ -122,7 +127,18 @@ class RRTGraph:
 
 
 	def addNode(self):
-		pass
+		x, y = [],[]
+		sc = ax.scatter(x,y)
+		plt.xlim(0,10)
+		plt.ylim(0,10)
+
+		plt.draw()
+		for i in range(10):
+			x.append(random.randint(0,10))
+			y.append(random.randint(0,10))
+			sc.set_offsets(np.c_[x,y])
+			fig.canvas.draw_idle()
+			plt.pause(0.5)
 
 	def removeNode(self):
 		pass
@@ -134,4 +150,4 @@ class RRTGraph:
 		pass
 
 	def nearest(self):
-		pass
+		pass"""
