@@ -1,15 +1,23 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import math
 
 class RRTMap:
-	#global ax
 
 	def __init__(self,start,goal,mapDim,obsDim,obsNum,fig,ax):
 		self.start = start
 		self.goal = goal
 		self.mapDim = mapDim
 		self.mapHt,self.mapWd = self.mapDim
+
+		self.goalFlag = False
+		self.x = []
+		self.y = []
+		self.parent = []
+		self.x.append(self.start[0])
+		self.y.append(self.start[1])
+		self.parent.append(0)
 
 		self.nodeRad = 0
 		self.ax = ax
@@ -18,6 +26,67 @@ class RRTMap:
 		self.obstacles = []
 		self.obsDim = obsDim
 		self.obsNum = obsNum
+		self.obsX = []
+		self.obsY = []
+		self.obsRad = []
+
+		self.goalState = None
+		self.path = []
+
+	def addNode(self,n,x,y):
+		self.x.insert(n,x)
+		self.y.insert(n,y)
+		
+
+	def removeNode(self,n):
+		self.x.pop(n)
+		self.y.pop(n)
+
+	def addEdge(self,parent,child):
+		self.parent.insert(child,parent)
+		x1,y1 = self.x[parent], self.y[parent]
+		x2,y2 = self.x[child], self.y[child]
+		line = plt.Line2D((x1,x2),(y1,y2), color='purple')
+		self.ax.add_line(line)
+
+	def removeEdge(self,n):
+		self.parent.pop(n)
+
+	def number_of_nodes(self):
+		return len(self.x)
+
+	def distance(self,n1,n2):
+		x1,y1 = self.x[n1],self.y[n1]
+		x2,y2 = self.x[n2],self.y[n2]
+		distance = ((float(x1)-float(x2))**2 + (float(y1)-float(y2))**2)**0.5
+		return distance
+
+	def nearest(self,n):
+		dmin = self.distance(0,n)
+		nodeNum = 0
+		for i in range(0,n):
+			if self.distance(i,n) < dmin:
+				dmin = self.distance(i,n)
+				nodeNum = i
+		return nodeNum
+
+	def step(self, near, randNode, dmax = 0.08):
+		d = self.distance(near,randNode):
+		if d>dmax:
+			u = dmax/d
+			xnear,ynear = self.x[near],self.y[near]
+			xrand,yrand = self.x[randNode],self.y[randNode]
+			px,py = xrand-xnear, yrand-ynear
+			theta = math.atan2(py,px)
+			x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+			self.removeNode(randNode)
+			if (x-self.goal[0])**2 + (y-self.goal[1])**2 <= 0.05**2:
+				self.add_node(randNode,self.goal[0],self.goal[1])
+				self.goalState = randNode
+				self.goalFlag = True
+			else:
+				self.add_node(randNode,x,y)
+
 
 	def makeCircle(self):
 		bounds = True
@@ -36,16 +105,19 @@ class RRTMap:
 		for i in range(0, self.obsNum):
 			collide = True
 			while collide:
-				centreX, centreY, obsRad = self.makeCircle()
+				centreX, centreY, rad = self.makeCircle()
 				#create the circle
 				a,b = self.start
 				c,d = self.goal
-				circle = plt.Circle((centreX,centreY),obsRad, color='black')
-				if ((a-centreX)**2 + (b-centreY)**2 <= obsRad) or ((c-centreX)**2 + (d-centreY)**2 <= obsRad):
+				circle = plt.Circle((centreX,centreY),rad, color='black')
+				if ((a-centreX)**2 + (b-centreY)**2 <= rad) or ((c-centreX)**2 + (d-centreY)**2 <= rad):
 					collide = True
 				else:	
 					collide = False
-					
+			
+			self.obsX.append(centreX)
+			self.obsY.append(centreY)
+			self.obsRad.append(rad)
 			obs.append(circle)
 
 		self.obstacles = obs.copy()	
@@ -54,7 +126,7 @@ class RRTMap:
 	def drawMap(self):
 		obs = self.makeObs()
 		startNode = plt.Circle(self.start, 0.01, color='blue')
-		goalNode = plt.Circle(self.goal, 0.01, color='red')
+		goalNode = plt.Circle(self.goal, 0.05, color='red')
 		self.ax.add_patch(startNode) 
 		self.ax.add_patch(goalNode)
 		for i in range(len(obs)):
@@ -63,91 +135,63 @@ class RRTMap:
 
 	def drawPath(self):
 		pass
-
-	def drawObs(self):
-		pass
 		
-	def addNode(self):
-		trial = plt.Circle((np.random.rand(),np.random.rand()),0.01,color='yellow')
-		self.ax.add_patch(trial)
+	def makeNode(self):
+		notValid = True
+		while notValid:
 
-			
-"""class RRTGraph:
+			x=np.random.rand()
+			y=np.random.rand()
+			self.x.append(x)
+			self.y.append(y)
+			nodeRadius = 0.008
+			notValid = self.nodeCheck(x,y)
+			if notValid == False:
+				#if len(self.x) > 2:
+				for i in range(0,len(self.x)-1):
+					notValid = not self.connect(i,len(self.x)-1)
+					if notValid == False:
+						break
+					else:
+						self.x.append(x)
+						self.y.append(y)
+				#else:
+					#notValid = not self.connect(0,1)
 
-	def __init__(self,start,goal,mapDim,obsDim,obsNum):
-		(x,y) = start
-		self.start = start
-		self.goal = goal
-		self.goalFlag = False
-		self.mapHt,self.mapWd = mapDim
+		node = plt.Circle((x,y),nodeRadius,color='green')
+		self.ax.add_patch(node)
+		#return x,y,nodeRadius
 
-		self.x = []
-		self.y = []
-		self.parent = []
-		self.x.append(x)
-		self.y.append(y)
-		self.parent.append(0)
+	def nodeCheck(self,x,y):
+		for i in range(len(self.obsX)):
+			if (x-self.obsX[i])**2 + (y-self.obsY[i])**2 <= self.obsRad[i]**2:
+				return True
+		if (x-self.start[0])**2 + (y-self.start[1])**2 <= 0.01**2:
+			return True
+		if (x-self.goal[0])**2 + (y-self.goal[1])**2 <= 0.05**2:
+			return True
+		return False
+	
+	def crossObstacle(self,x1,x2,y1,y2):
+		dy = y2-y1
+		dx = x2-x1
+		m = dy/dx
+		d = (dx*y1-dy*x1)/dx
+		for i in range(len(self.obstacles)):
+			a = 1+m**2
+			b = 2*m*(d-self.obsY[i])-2*self.obsX[i]
+			c = self.obsX[i]**2+(d - self.obsY[i])**2 - self.obsRad[i]**2
+			if b**2 - 4*a*c > 0:
+				return True
 
-		self.obstacles = []
-		self.obsDim = obsDim
-		self.obsNum = obsNum
+		return False
 
-		self.goalState = None
-		self.path = []
-
-
-	def makeCircle(self):
-		bounds = True
-		while bounds:
-			tempX = np.random.rand()
-			tempY = np.random.rand()
-			radius = np.random.rand()
-			if tempX<=0.1 or tempX>=0.9 or tempY<=0.1 or tempY>=0.9 or radius>=0.01 or radius<=0.005:
-				bounds = True
-			else:
-				bounds = False
-		return tempX,tempY,radius
-
-	def makeObs(self):
-		obs=[]
-		for i in range(0, self.obsNum):
-			collide = True
-			while collide:
-				centreX, centreY, obsRad = self.makeCircle()
-				#create the circle
-				a,b = self.start
-				c,d = self.goal
-				circle = plt.Circle((centreX,centreY),radius=obsRad, color='black')
-				if ((a-centreX)**2 + (y-centreY)**2 <= obsRad) or ((c-centreX)**2 + (d-centreY)**2 <= obsRad):
-					collide = True
-				else:
-					collide = False
-					ax.add_patch(circle)
-				obs.append(circle)
-
-
-	def addNode(self):
-		x, y = [],[]
-		sc = ax.scatter(x,y)
-		plt.xlim(0,10)
-		plt.ylim(0,10)
-
-		plt.draw()
-		for i in range(10):
-			x.append(random.randint(0,10))
-			y.append(random.randint(0,10))
-			sc.set_offsets(np.c_[x,y])
-			fig.canvas.draw_idle()
-			plt.pause(0.5)
-
-	def removeNode(self):
-		pass
-
-	def number_of_nodes(self):
-		pass
-
-	def distance(self):
-		pass
-
-	def nearest(self):
-		pass"""
+	def connect(self,n1,n2):
+		x1,y1 = self.x[n1], self.y[n1]
+		x2,y2 = self.x[n2], self.y[n2]
+		if self.crossObstacle(x1,x2,y1,y2):
+			self.removeNode(n2)
+			return False
+		else:
+			self.addEdge(n1,n2)
+			return True
