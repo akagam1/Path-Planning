@@ -11,24 +11,22 @@ plt.get_current_fig_manager().canvas.set_window_title('RRT Visualizer')
 plt.draw()
 
 
-block = RRTMap((0.1,0.9),(0.9,0.1),40,fig,ax)
-obstacles = block.drawMap()
+graph = RRTMap((0.1,0.9),(0.9,0.1),40,fig,ax)
+obstacles = graph.drawMap()
 
 stop = False
 plt.pause(2)
 while not stop:
-    stop = block.makeNode()
+    stop = graph.makeNode()
     fig.canvas.draw_idle()
     plt.pause(0.05)
 
 #plt.waitforbuttonpress()
 
-child = block.number_of_nodes() - 1
+child = graph.number_of_nodes() - 1
 start = False
-"""print(block.parentlen())
-print(child)"""
 while not start:
-    current = block.drawPath(child)
+    current = graph.drawPath(child)
     fig.canvas.draw_idle()
     plt.pause(0.05)
     child = current

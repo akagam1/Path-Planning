@@ -28,6 +28,8 @@ class RRTMap:
 		self.obsY = []
 		self.obsRad = []
 
+		self.infinity = False
+
 	def addNode(self,n,x,y):
 		self.x.insert(n,x)
 		self.y.insert(n,y)
@@ -72,7 +74,18 @@ class RRTMap:
 		d = self.distance(near,randNode)
 		xnear,ynear = self.x[near],self.y[near]
 		xrand,yrand = self.x[randNode],self.y[randNode]
-		if d>dmax:
+		if xrand == self.goal[0] and yrand == self.goal[1]:
+			if d>dmax:
+				u = dmax/d
+				px,py = xrand-xnear, yrand-ynear
+				theta = math.atan2(py,px)
+				x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+				self.removeNode(randNode) 
+				self.addNode(randNode,x,y)
+			else:
+				self.goalFlag = True
+
+		elif d>dmax:
 			u = dmax/d
 			px,py = xrand-xnear, yrand-ynear
 			theta = math.atan2(py,px)
@@ -90,6 +103,8 @@ class RRTMap:
 				self.addNode(randNode,self.goal[0],self.goal[1])
 				self.goalState = randNode
 				self.goalFlag = True
+
+			#no else statement as xrand,yrand are already present in the x,y lists
 
 	def makeCircle(self):
 		bounds = True
@@ -146,19 +161,28 @@ class RRTMap:
 		
 	def makeNode(self):
 		choice = np.random.rand()
-		#if choice<=0.8:
-		self.expand()
-		"""else:
+		if choice<=0.3:
+			self.expand()
+		else:
 			self.validConnects = []
 			nodes = self.number_of_nodes()
 			self.addNode(nodes,self.goal[0],self.goal[1])
 			for i in range(len(self.x)):
 				self.connect(i,nodes)
 			if len(self.validConnects) == 0:
-				self.removeNode(len(self.x)-1)
+				self.removeNode(nodes)
 				self.expand()
 			else:
-				self.bias(self.goal)"""
+				near = self.bias()
+				if self.infinity == True:
+					self.removeNode(nodes)
+					self.expand()
+				else:
+					nodeRadius = 0.005
+					x,y = self.x[nodes],self.y[nodes]
+					node = plt.Circle((x,y),nodeRadius,color='deeppink')
+					self.ax.add_patch(node)
+					self.addEdge(near,nodes)
 		return self.goalFlag
 
 	def nodeCheck(self,x,y):
@@ -172,6 +196,10 @@ class RRTMap:
 	def crossObstacle(self,x1,x2,y1,y2):
 		dy = y2-y1
 		dx = x2-x1
+		if dx == 0:
+			self.infinity = True
+			return True
+		self.infinity = False
 		m = dy/dx
 		d = (dx*y2-dy*x2)/dx
 		xmin,ymin = min(x1,x2),min(y1,y2)
@@ -196,18 +224,13 @@ class RRTMap:
 		if not self.crossObstacle(x1,x2,y1,y2):
 			self.validConnects.append(n1)
 
-	def bias(self, goal):
+	def bias(self):
 		nodes = self.number_of_nodes()-1
-		"""self.addNode(nodes,goal[0],goal[1])
-		self.connect(near,nodes)"""
+		nodeRadius = 0.005
 		validConnects = self.validConnects
 		near = self.nearest(validConnects, nodes)
 		self.step(near,nodes)
-		x,y = self.x[nodes],self.y[nodes]
-		node = plt.Circle((x,y),nodeRadius,color='deeppink')
-		self.ax.add_patch(node)
-		self.addEdge(near,nodes)
-
+		return near
 
 	def expand(self):
 		notValid = True
