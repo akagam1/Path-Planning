@@ -11,10 +11,11 @@ plt.get_current_fig_manager().canvas.set_window_title('RRT Visualizer')
 plt.draw()
 
 
-block = RRTMap((0.1,0.9),(0.9,0.1),(5,5),6,40,fig,ax)
+block = RRTMap((0.1,0.9),(0.9,0.1),40,fig,ax)
 obstacles = block.drawMap()
 
 stop = False
+plt.pause(2)
 while not stop:
     stop = block.makeNode()
     fig.canvas.draw_idle()

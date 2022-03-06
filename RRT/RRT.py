@@ -5,11 +5,9 @@ import math
 
 class RRTMap:
 
-	def __init__(self,start,goal,mapDim,obsDim,obsNum,fig,ax):
+	def __init__(self,start,goal,obsNum,fig,ax):
 		self.start = start
 		self.goal = goal
-		self.mapDim = mapDim
-		self.mapHt,self.mapWd = self.mapDim
 
 		self.goalFlag = False
 		self.x = []
@@ -25,14 +23,10 @@ class RRTMap:
 		self.fig = fig
 
 		self.obstacles = []
-		self.obsDim = obsDim
 		self.obsNum = obsNum
 		self.obsX = []
 		self.obsY = []
 		self.obsRad = []
-
-		self.goalState = None
-		self.path = []
 
 	def addNode(self,n,x,y):
 		self.x.insert(n,x)
@@ -96,9 +90,6 @@ class RRTMap:
 				self.addNode(randNode,self.goal[0],self.goal[1])
 				self.goalState = randNode
 				self.goalFlag = True
-			"""else:
-				self.addNode(randNode,xrand,yrand)"""
-
 
 	def makeCircle(self):
 		bounds = True
@@ -137,7 +128,7 @@ class RRTMap:
 
 	def drawMap(self):
 		obs = self.makeObs()
-		startNode = plt.Circle(self.start, 0.01, color='blue')
+		startNode = plt.Circle(self.start, 0.01, color='darkgreen')
 		goalNode = plt.Circle(self.goal, 0.05, color='red')
 		self.ax.add_patch(startNode) 
 		self.ax.add_patch(goalNode)
@@ -202,12 +193,8 @@ class RRTMap:
 	def connect(self,n1,n2):
 		x1,y1 = self.x[n1], self.y[n1]
 		x2,y2 = self.x[n2], self.y[n2]
-		"""if self.crossObstacle(x1,x2,y1,y2):
-			self.removeNode(n2)
-			return False"""
 		if not self.crossObstacle(x1,x2,y1,y2):
 			self.validConnects.append(n1)
-			#self.addEdge(n1,n2)
 
 	def bias(self, goal):
 		nodes = self.number_of_nodes()-1
