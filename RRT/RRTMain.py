@@ -16,10 +16,10 @@ block = RRTMap((0.1,0.8),(0.9,0.1),(5,5),6,40,fig,ax)
 trial = block.drawPath()
 obstacles = block.drawMap()
 
-
-for i in range(50):
-    block.makeNode()
+stop = False
+while not stop:
+    stop = block.makeNode()
     fig.canvas.draw_idle()
-    plt.pause(0.1)
+    plt.pause(0.05)
 
 plt.waitforbuttonpress()

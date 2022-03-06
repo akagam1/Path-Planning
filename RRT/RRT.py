@@ -18,6 +18,7 @@ class RRTMap:
 		self.x.append(self.start[0])
 		self.y.append(self.start[1])
 		self.parent.append(0)
+		self.validConnects = []
 
 		self.nodeRad = 0
 		self.ax = ax
@@ -46,7 +47,7 @@ class RRTMap:
 		self.parent.insert(child,parent)
 		x1,y1 = self.x[parent], self.y[parent]
 		x2,y2 = self.x[child], self.y[child]
-		line = plt.Line2D((x1,x2),(y1,y2), color='purple')
+		line = plt.Line2D((x1,x2),(y1,y2), color='cyan')
 		self.ax.add_line(line)
 
 	def removeEdge(self,n):
@@ -58,34 +59,42 @@ class RRTMap:
 	def distance(self,n1,n2):
 		x1,y1 = self.x[n1],self.y[n1]
 		x2,y2 = self.x[n2],self.y[n2]
-		distance = ((float(x1)-float(x2))**2 + (float(y1)-float(y2))**2)**0.5
+		distance = ((x1-x2)**2 + (y1-y2)**2)**0.5
 		return distance
 
-	def nearest(self,n):
+	def nearest(self,validConnects,n):
 		dmin = self.distance(0,n)
 		nodeNum = 0
-		for i in range(0,n):
-			if self.distance(i,n) < dmin:
-				dmin = self.distance(i,n)
-				nodeNum = i
+		for i in range(0,len(validConnects)):
+			dtemp = self.distance(validConnects[i],n)
+			if dtemp < dmin:
+				dmin = dtemp
+				nodeNum = validConnects[i]
 		return nodeNum
 
-	def step(self, near, randNode, dmax = 0.08):
-		d = self.distance(near,randNode):
+	def step(self, near, randNode, dmax = 0.05):
+		d = self.distance(near,randNode)
+		xnear,ynear = self.x[near],self.y[near]
+		xrand,yrand = self.x[randNode],self.y[randNode]
 		if d>dmax:
 			u = dmax/d
-			xnear,ynear = self.x[near],self.y[near]
-			xrand,yrand = self.x[randNode],self.y[randNode]
 			px,py = xrand-xnear, yrand-ynear
 			theta = math.atan2(py,px)
 			x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
 			self.removeNode(randNode)
 			if (x-self.goal[0])**2 + (y-self.goal[1])**2 <= 0.05**2:
-				self.add_node(randNode,self.goal[0],self.goal[1])
+				self.addNode(randNode,self.goal[0],self.goal[1])
 				self.goalState = randNode
 				self.goalFlag = True
 			else:
-				self.add_node(randNode,x,y)
+				self.addNode(randNode,x,y)
+		else:
+			if (xrand-self.goal[0])**2 + (yrand-self.goal[1])**2 <= 0.05**2:
+				self.addNode(randNode,self.goal[0],self.goal[1])
+				self.goalState = randNode
+				self.goalFlag = True
+			else:
+				self.addNode(randNode,xrand,yrand)
 
 
 	def makeCircle(self):
@@ -137,30 +146,21 @@ class RRTMap:
 		pass
 		
 	def makeNode(self):
-		notValid = True
-		while notValid:
+		choice = np.random.rand()
+		self.expand()
+		return self.goalFlag
 
-			x=np.random.rand()
-			y=np.random.rand()
-			self.x.append(x)
-			self.y.append(y)
-			nodeRadius = 0.008
-			notValid = self.nodeCheck(x,y)
-			if notValid == False:
-				#if len(self.x) > 2:
-				for i in range(0,len(self.x)-1):
-					notValid = not self.connect(i,len(self.x)-1)
-					if notValid == False:
-						break
-					else:
-						self.x.append(x)
-						self.y.append(y)
-				#else:
-					#notValid = not self.connect(0,1)
-
-		node = plt.Circle((x,y),nodeRadius,color='green')
-		self.ax.add_patch(node)
-		#return x,y,nodeRadius
+		"""else:
+			self.validConnects = []
+			nodes = self.number_of_nodes()
+			self.addNode(nodes,self.goal[0],self.goal[1])
+			for i in range(len(self.x)):
+				self.connect(i,nodes)
+			if len(self.validConnects) == 0:
+				self.removeNode(len(self.x)-1)
+				self.expand()
+			else:
+				self.bias(self.goal)"""
 
 	def nodeCheck(self,x,y):
 		for i in range(len(self.obsX)):
@@ -168,30 +168,79 @@ class RRTMap:
 				return True
 		if (x-self.start[0])**2 + (y-self.start[1])**2 <= 0.01**2:
 			return True
-		if (x-self.goal[0])**2 + (y-self.goal[1])**2 <= 0.05**2:
-			return True
 		return False
 	
 	def crossObstacle(self,x1,x2,y1,y2):
 		dy = y2-y1
 		dx = x2-x1
 		m = dy/dx
-		d = (dx*y1-dy*x1)/dx
+		d = (dx*y2-dy*x2)/dx
+		xmin,ymin = min(x1,x2),min(y1,y2)
+		xmax,ymax = max(x1,x2),max(y1,y2)
 		for i in range(len(self.obstacles)):
 			a = 1+m**2
 			b = 2*m*(d-self.obsY[i])-2*self.obsX[i]
 			c = self.obsX[i]**2+(d - self.obsY[i])**2 - self.obsRad[i]**2
-			if b**2 - 4*a*c > 0:
-				return True
+			disc = b**2 - 4*a*c
+			if disc >= 0:
 
+				xint = (-b + disc**0.5)/(2*a)
+				yint = m*xint + d
+				if (xint>xmin and xint<xmax and yint>ymin and yint<ymax):
+					return True
+			
 		return False
 
 	def connect(self,n1,n2):
 		x1,y1 = self.x[n1], self.y[n1]
 		x2,y2 = self.x[n2], self.y[n2]
-		if self.crossObstacle(x1,x2,y1,y2):
+		"""if self.crossObstacle(x1,x2,y1,y2):
 			self.removeNode(n2)
-			return False
-		else:
-			self.addEdge(n1,n2)
-			return True
+			return False"""
+		if not self.crossObstacle(x1,x2,y1,y2):
+			self.validConnects.append(n1)
+			#self.addEdge(n1,n2)
+
+	def bias(self, goal):
+		nodes = self.number_of_nodes()-1
+		"""self.addNode(nodes,goal[0],goal[1])
+		self.connect(near,nodes)"""
+		validConnects = self.validConnects
+		near = self.nearest(validConnects, nodes)
+		self.step(near,nodes)
+		x,y = self.x[nodes],self.y[nodes]
+		node = plt.Circle((x,y),nodeRadius,color='deeppink')
+		self.ax.add_patch(node)
+		self.addEdge(near,nodes)
+
+
+	def expand(self):
+		notValid = True
+		while notValid:
+
+			x=np.random.rand()
+			y=np.random.rand()
+			nodeRadius = 0.008
+			notValid = self.nodeCheck(x,y)
+			if notValid == False:
+				self.x.append(x)
+				self.y.append(y)
+				self.validConnects = []
+				for i in range(0,len(self.x)-1):
+					self.connect(i,len(self.x)-1)
+					
+
+				if len(self.validConnects)>=1:
+					notValid = False
+				else:
+					self.removeNode(len(self.x)-1)
+					notValid = True
+
+		nodes = self.number_of_nodes()-1
+		validConnects = self.validConnects
+		nearestNode = self.nearest(validConnects,nodes)
+		self.step(nearestNode, nodes, 0.05)
+		x,y = self.x[nodes],self.y[nodes]
+		node = plt.Circle((x,y),nodeRadius,color='deeppink')
+		self.ax.add_patch(node)
+		self.addEdge(nearestNode,nodes)
