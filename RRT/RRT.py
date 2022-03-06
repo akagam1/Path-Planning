@@ -37,14 +37,16 @@ class RRTMap:
 	def addNode(self,n,x,y):
 		self.x.insert(n,x)
 		self.y.insert(n,y)
-		
+	
+	def parentlen(self):
+		return len(self.parent)
 
 	def removeNode(self,n):
 		self.x.pop(n)
 		self.y.pop(n)
 
 	def addEdge(self,parent,child):
-		self.parent.insert(child,parent)
+		self.parent.insert(child+1,parent)
 		x1,y1 = self.x[parent], self.y[parent]
 		x2,y2 = self.x[child], self.y[child]
 		line = plt.Line2D((x1,x2),(y1,y2), color='cyan')
@@ -90,11 +92,12 @@ class RRTMap:
 				self.addNode(randNode,x,y)
 		else:
 			if (xrand-self.goal[0])**2 + (yrand-self.goal[1])**2 <= 0.05**2:
+				self.removeNode(randNode)
 				self.addNode(randNode,self.goal[0],self.goal[1])
 				self.goalState = randNode
 				self.goalFlag = True
-			else:
-				self.addNode(randNode,xrand,yrand)
+			"""else:
+				self.addNode(randNode,xrand,yrand)"""
 
 
 	def makeCircle(self):
@@ -142,14 +145,18 @@ class RRTMap:
 			self.ax.add_patch(obs[i])
 
 
-	def drawPath(self):
-		pass
+	def drawPath(self,child):
+		parent = self.parent[child]
+		xp,yp = self.x[parent],self.y[parent]
+		xc,yc = self.x[child],self.y[child]
+		line = plt.Line2D((xc,xp),(yc,yp),color='gold')
+		self.ax.add_line(line)
+		return parent
 		
 	def makeNode(self):
 		choice = np.random.rand()
+		#if choice<=0.8:
 		self.expand()
-		return self.goalFlag
-
 		"""else:
 			self.validConnects = []
 			nodes = self.number_of_nodes()
@@ -161,6 +168,7 @@ class RRTMap:
 				self.expand()
 			else:
 				self.bias(self.goal)"""
+		return self.goalFlag
 
 	def nodeCheck(self,x,y):
 		for i in range(len(self.obsX)):
@@ -220,7 +228,7 @@ class RRTMap:
 
 			x=np.random.rand()
 			y=np.random.rand()
-			nodeRadius = 0.008
+			nodeRadius = 0.005
 			notValid = self.nodeCheck(x,y)
 			if notValid == False:
 				self.x.append(x)
@@ -229,7 +237,6 @@ class RRTMap:
 				for i in range(0,len(self.x)-1):
 					self.connect(i,len(self.x)-1)
 					
-
 				if len(self.validConnects)>=1:
 					notValid = False
 				else:
