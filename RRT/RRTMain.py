@@ -11,7 +11,7 @@ plt.get_current_fig_manager().canvas.set_window_title('RRT Visualizer')
 plt.draw()
 
 
-graph = RRTMap((0.1,0.9),(0.9,0.1),40,fig,ax)
+graph = RRTMap((0.1,0.9),(0.9,0.1),50,fig,ax,1)
 obstacles = graph.drawMap()
 
 stop = False

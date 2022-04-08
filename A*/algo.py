@@ -104,10 +104,15 @@ while running:
 			point = pygame.mouse.get_pos()
 			row,col = position(point,ROWS,WIDTH)
 			node = grid[col][row]
-			if node.is_barrier():
+			"""if node.is_barrier():
 				node.reset()
-			else:
-				node.make_barrier()
+			else:"""
+			node.make_barrier()
+		if pygame.mouse.get_pressed()[1]:
+			point = pygame.mouse.get_pos()
+			row, col = position(point, ROWS, WIDTH)
+			node = grid[col][row]
+			node.reset()
 
 	draw(win,grid,ROWS,WIDTH)
 pygame.quit()

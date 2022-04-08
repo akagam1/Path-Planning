@@ -5,10 +5,10 @@ import math
 
 class RRTMap:
 
-	def __init__(self,start,goal,obsNum,fig,ax):
+	def __init__(self,start,goal,obsNum,fig,ax,biasPercent):
 		self.start = start
 		self.goal = goal
-
+		self.biasPercent = biasPercent
 		self.goalFlag = False
 		self.x = []
 		self.y = []
@@ -28,7 +28,7 @@ class RRTMap:
 		self.obsY = []
 		self.obsRad = []
 
-		self.infinity = False
+		self.infinity = False #checks if dx term is 0. If it is zero dy/dx = infinity
 
 	def addNode(self,n,x,y):
 		self.x.insert(n,x)
@@ -79,7 +79,9 @@ class RRTMap:
 				u = dmax/d
 				px,py = xrand-xnear, yrand-ynear
 				theta = math.atan2(py,px)
-				x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+				#x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+				x = ((d-dmax)*xnear+(dmax)*xrand)/d
+				y = ((d-dmax)*ynear+(dmax)*yrand)/d
 				self.removeNode(randNode) 
 				self.addNode(randNode,x,y)
 			else:
@@ -89,7 +91,9 @@ class RRTMap:
 			u = dmax/d
 			px,py = xrand-xnear, yrand-ynear
 			theta = math.atan2(py,px)
-			x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+			#x,y = xnear+dmax*math.cos(theta),ynear + dmax*math.sin(theta)
+			x = ((d-dmax)*xnear+(dmax)*xrand)/d
+			y = ((d-dmax)*ynear+(dmax)*yrand)/d
 			self.removeNode(randNode)
 			if (x-self.goal[0])**2 + (y-self.goal[1])**2 <= 0.05**2:
 				self.addNode(randNode,self.goal[0],self.goal[1])
@@ -161,7 +165,8 @@ class RRTMap:
 		
 	def makeNode(self):
 		choice = np.random.rand()
-		if choice<=0.3:
+		self.expand()
+		"""if choice<=(1-self.biasPercent):
 			self.expand()
 		else:
 			self.validConnects = []
@@ -182,7 +187,7 @@ class RRTMap:
 					x,y = self.x[nodes],self.y[nodes]
 					node = plt.Circle((x,y),nodeRadius,color='deeppink')
 					self.ax.add_patch(node)
-					self.addEdge(near,nodes)
+					self.addEdge(near,nodes)"""
 		return self.goalFlag
 
 	def nodeCheck(self,x,y):
@@ -196,6 +201,14 @@ class RRTMap:
 	def crossObstacle(self,x1,x2,y1,y2):
 		dy = y2-y1
 		dx = x2-x1
+		"""if dx == 0:
+			ymin,ymax = min(y1,y2),max(y1,y2)
+			for i in range(len(self.obstacles)):
+				if self.obsRad[i]**2 - (x2-self.obsX[i])**2 >=0:
+					yint = (self.obsRad[i]**2 - (x2-self.obsX[i])**2 >=0)**0.5 + self.obsY[i]
+					if yint>ymin and yint<ymax:
+						return True
+			return False"""
 		if dx == 0:
 			self.infinity = True
 			return True
